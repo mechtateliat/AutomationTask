@@ -30,6 +30,8 @@ jobs:
       
     - name: Run tests
       env:
+        # UI Configuration - Force headless mode for CI/CD
+        UI__Headless: true
         # API Configuration - Sensitive data should be stored in GitHub Secrets
         # Go to: Repository Settings - Secrets and variables - Actions - New repository secret
         # Add a secret named 'API_KEY' with your actual API key value
