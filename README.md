@@ -4,18 +4,18 @@ A modern, scalable test automation framework built with C# and .NET 8, featuring
 
 ## 📑 Table of Contents
 
-- [About the Project](#about-the-project)
-- [Technologies Used](#technologies-used)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation-setup)
-- [Configuration](#configuration)
-- [Security - Managing API Keys](#security-managing-api-keys)
-- [Running Tests](#running-tests)
-- [Test Reports](#test-reports)
-- [Key Features](#key-features)
-- [Test Examples](#test-examples)
-- [Best Practices](#best-practices-demonstrated)
+- [About the Project](#-about-the-project)
+- [Technologies Used](#%EF%B8%8F-technologies-used)
+- [Project Structure](#-project-structure)
+- [Prerequisites](#-prerequisites)
+- [Installation & Setup](#-installation--setup)
+- [Configuration](#%EF%B8%8F-configuration)
+- [Security - Managing API Keys](#-security---managing-api-keys)
+- [Running Tests](#-running-tests)
+- [Test Reports](#-test-reports)
+- [Key Features](#-key-features)
+- [Test Examples](#-test-examples)
+- [Best Practices](#-best-practices-demonstrated)
 
 ## 📖 About the Project
 
