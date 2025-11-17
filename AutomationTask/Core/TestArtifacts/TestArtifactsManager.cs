@@ -6,7 +6,7 @@ namespace AutomationTask.Core.TestArtifacts;
 public static class TestArtifactsManager
 {
     private static readonly Lazy<string> _projectRoot = new Lazy<string>(() =>
-        Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\.."))
+        Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", ".."))
     );
 
     private static readonly Lazy<string> _testReportsRoot = new Lazy<string>(() =>
