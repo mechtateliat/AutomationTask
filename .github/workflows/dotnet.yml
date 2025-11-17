@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "master" ]
 
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -38,16 +44,6 @@ jobs:
         API__Headers__x-api-key: ${{ secrets.API_KEY }}
       run: dotnet test --no-build --configuration Release --verbosity normal
       continue-on-error: true
-    
-    - name: List generated test artifacts (debug)
-      if: always()
-      run: |
-        echo "=== Searching for test artifacts ==="
-        find . -name "TestReports" -type d 2>/dev/null || true
-        find . -name "*.html" -path "*/TestReports/*" 2>/dev/null || true
-        echo "=== Directory structure ==="
-        ls -la AutomationTask/ || true
-        ls -la AutomationTask/TestReports/ || true
         
     - name: Upload test reports (ExtentReports HTML)
       uses: actions/upload-artifact@v4
@@ -88,3 +84,25 @@ jobs:
           **/TestReports/traces/**/*
           AutomationTask/TestReports/traces/**/*
         if-no-files-found: ignore
+    
+    - name: Setup Pages
+      if: always()
+      uses: actions/configure-pages@v4
+      
+    - name: Upload test report to Pages
+      if: always()
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'AutomationTask/TestReports'
+  
+  deploy-report:
+    needs: build-and-test
+    if: always()
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
