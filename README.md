@@ -49,7 +49,6 @@ The framework follows SOLID principles and implements industry best practices in
 
 ### Testing Features
 - Multi-browser support (Chrome, Chromium, Firefox, WebKit)
-- Parallel test execution
 - Automatic screenshots and videos on failures
 - Test categorization and filtering
 
