@@ -35,6 +35,7 @@ jobs:
       run: pwsh AutomationTask/bin/Release/net8.0/playwright.ps1 install --with-deps
       
     - name: Run tests
+      id: test-run
       env:
         # UI Configuration - Force headless mode for CI/CD
         UI__Headless: true
@@ -42,8 +43,45 @@ jobs:
         # Go to: Repository Settings - Secrets and variables - Actions - New repository secret
         # Add a secret named 'API_KEY' with your actual API key value
         API__Headers__x-api-key: ${{ secrets.API_KEY }}
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
       continue-on-error: true
+    
+    - name: Prepare GitHub Pages (create index.html)
+      if: always()
+      run: |
+        # Find the generated HTML report
+        REPORT_FILE=$(find AutomationTask/TestReports -name "*.html" -type f | head -n 1)
+        if [ -n "$REPORT_FILE" ]; then
+          # Copy it as index.html for GitHub Pages
+          cp "$REPORT_FILE" AutomationTask/TestReports/index.html
+          echo "Created index.html from $REPORT_FILE"
+        else
+          echo "No HTML report found!"
+        fi
+    
+    - name: Create test results summary
+      if: always()
+      run: |
+        echo "## ?? Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "AutomationTask/TestResults/test-results.trx" ]; then
+          # Parse TRX file for test counts (basic parsing)
+          TOTAL=$(grep -oP 'total="\K[0-9]+' AutomationTask/TestResults/test-results.trx || echo "0")
+          PASSED=$(grep -oP 'passed="\K[0-9]+' AutomationTask/TestResults/test-results.trx || echo "0")
+          FAILED=$(grep -oP 'failed="\K[0-9]+' AutomationTask/TestResults/test-results.trx || echo "0")
+          
+          echo "- ? **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- ? **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "- ?? **Total:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Test results file not found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ?? Full Test Report" >> $GITHUB_STEP_SUMMARY
+        echo "The detailed HTML test report will be available at:" >> $GITHUB_STEP_SUMMARY
+        echo "?? https://mechtateliat.github.io/AutomationTask/" >> $GITHUB_STEP_SUMMARY
         
     - name: Upload test reports (ExtentReports HTML)
       uses: actions/upload-artifact@v4
@@ -77,7 +115,7 @@ jobs:
         
     - name: Upload Playwright traces
       uses: actions/upload-artifact@v4
-      if: failure()
+      if: always()  # Changed from if: failure() to always upload traces
       with:
         name: playwright-traces
         path: |
