@@ -8,11 +8,14 @@ A modern, scalable test automation framework built with C# and .NET 8, featuring
 - [Technologies Used](#technologies-used)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation--setup)
+- [Installation & Setup](#installation-setup)
 - [Configuration](#configuration)
+- [Security - Managing API Keys](#security-managing-api-keys)
 - [Running Tests](#running-tests)
 - [Test Reports](#test-reports)
 - [Key Features](#key-features)
+- [Test Examples](#test-examples)
+- [Best Practices](#best-practices-demonstrated)
 
 ## 📖 About the Project
 
@@ -77,7 +80,8 @@ AutomationTask/
 │   └── LocatorExtensions.cs
 │
 ├── Helpers/                    # Utility helpers
-│   └── PriceHelper.cs
+│   ├── PriceHelper.cs
+│   └── UserApiHelper.cs
 │
 ├── Models/                     # Data models
 │   └── UserResponse.cs
@@ -146,12 +150,14 @@ Before you begin, ensure you have the following installed:
 
 ## 🚀 Installation & Setup
 
-### 1. Clone or Extract the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/mechtateliat/AutomationTask.git
-   cd AutomationTask
+cd AutomationTask
 ```
+
+**Note:** After cloning, you'll be in the **repository root**. The project files are in the `AutomationTask/` subdirectory.
 
 ### 2. Restore NuGet Packages
 
@@ -165,34 +171,78 @@ dotnet restore
 dotnet build
 ```
 
-### 4. Install Playwright Browsers
+### 4. Configure API Key (Required for API Tests)
 
-Playwright requires browsers to be installed separately. You can use the provided PowerShell script:
+**Important:** You must configure your API key before running API tests.
 
-**Using the provided script:**
+#### Step 1: Get Your API Key
+
+Visit [https://reqres.in/signup](https://reqres.in/signup) to obtain a free API key for testing purposes.
+
+#### Step 2: Set Up User Secrets
+
+```bash
+# Navigate to the project directory (from repository root)
+cd AutomationTask
+
+# Set your API key using User Secrets (replace with your actual key)
+dotnet user-secrets set "API:Headers:x-api-key" "your-api-key-from-reqres"
+
+# Verify it was set correctly
+dotnet user-secrets list
+
+# Navigate back to the repository root
+cd ..
+```
+
+💡 **Why User Secrets?** This stores your API key securely outside the project directory and works on all platforms (Windows, macOS, Linux). Your key will never be committed to Git. See the [Security - Managing API Keys](#security-managing-api-keys) section for more details.
+
+### 5. Install Playwright Browsers
+
+Playwright requires browsers to be installed separately.
+
+**Using the provided script (works from repository root or project directory):**
 ```powershell
+# From repository root:
+.\AutomationTask\install-browsers.ps1
+
+# OR from AutomationTask directory:
+cd AutomationTask
 .\install-browsers.ps1
 ```
 
 **Or manually install browsers:**
 
-**Windows (PowerShell):**
-```powershell
-pwsh bin/Debug/net8.0/playwright.ps1 install chrome
-pwsh bin/Debug/net8.0/playwright.ps1 install chromium
-pwsh bin/Debug/net8.0/playwright.ps1 install firefox
-pwsh bin/Debug/net8.0/playwright.ps1 install webkit
+After building the project, run from repository root:
+
+```bash
+pwsh AutomationTask/bin/Debug/net8.0/playwright.ps1 install
 ```
 
-**macOS/Linux:**
+Or install specific browsers:
+
 ```bash
-pwsh bin/Debug/net8.0/playwright.ps1 install chrome
-pwsh bin/Debug/net8.0/playwright.ps1 install chromium
-pwsh bin/Debug/net8.0/playwright.ps1 install firefox
-pwsh bin/Debug/net8.0/playwright.ps1 install webkit
+pwsh AutomationTask/bin/Debug/net8.0/playwright.ps1 install chrome
+pwsh AutomationTask/bin/Debug/net8.0/playwright.ps1 install chromium
+pwsh AutomationTask/bin/Debug/net8.0/playwright.ps1 install firefox
+pwsh AutomationTask/bin/Debug/net8.0/playwright.ps1 install webkit
 ```
 
 This will download Chrome, Chromium, Firefox, and WebKit browsers (~400MB).
+
+### 6. Verify Setup
+
+Run a quick test to verify everything is configured correctly (from repository root):
+
+```bash
+# Run API tests to verify User Secrets are working
+dotnet test --filter "Category=API" --logger "console;verbosity=normal"
+
+# Run UI tests to verify Playwright browsers are installed
+dotnet test --filter "Category=UI" --logger "console;verbosity=normal"
+```
+
+If tests pass, you're all set! 🎉
 
 ## ⚙️ Configuration
 
@@ -212,17 +262,26 @@ Use the `TEST_ENVIRONMENT` environment variable:
 
 **Windows (PowerShell):**
 ```powershell
-$env:TEST_ENVIRONMENT = "testing"
+$env:TEST_ENVIRONMENT = "dev"
+
+# Verify it was set
+echo $env:TEST_ENVIRONMENT
 ```
 
 **Windows (Command Prompt):**
 ```cmd
-set TEST_ENVIRONMENT=testing
+set TEST_ENVIRONMENT=dev
+
+# Verify it was set
+echo %TEST_ENVIRONMENT%
 ```
 
 **macOS/Linux:**
 ```bash
-export TEST_ENVIRONMENT=testing
+export TEST_ENVIRONMENT=dev
+
+# Verify it was set
+echo $TEST_ENVIRONMENT
 ```
 
 ### Key Configuration Options
@@ -237,14 +296,104 @@ export TEST_ENVIRONMENT=testing
     "Headless": false,                // true for CI/CD pipelines
     "Timeout": 30000,                 // Default timeout in ms
     "SlowMo": 0,                      // Slow down operations (ms)
-    "ViewportWidth": 1920,            // Browser width
-    "ViewportHeight": 1080,           // Browser height
+    "Profile": "Custom",              // Predefined device profile or "Custom"
+    "ViewportWidth": 1920,            // Browser width (used when Profile is "Custom")
+    "ViewportHeight": 1080,           // Browser height (used when Profile is "Custom")
     "Screenshot": "only-on-failure",  // Screenshot capture mode
     "Video": "on",                    // Video recording
     "Trace": "retain-on-failure"      // Playwright trace
   }
 }
 ```
+
+#### Viewport Configuration - Multiple Resolution Support
+
+The framework supports testing with different browser resolutions for responsive design testing:
+
+**Option 1: Predefined Device Profiles**
+
+Use predefined profiles in `appsettings.json`:
+
+```json
+{
+  "Ui": {
+    "Profile": "DesktopFullHD"  // Use a predefined profile
+  }
+}
+```
+
+**Available profiles:**
+- `DesktopFullHD` - 1920 x 1080 (Full HD Desktop)
+- `DesktopHD` - 1366 x 768 (Standard HD Desktop)
+- `Laptop` - 1280 x 720 (Laptop)
+- `TabletLandscape` - 1024 x 768 (Tablet in landscape)
+- `TabletPortrait` - 768 x 1024 (Tablet in portrait)
+- `MobileLarge` - 414 x 896 (iPhone XR, 11)
+- `MobileMedium` - 375 x 667 (iPhone 6/7/8)
+- `MobileSmall` - 320 x 568 (iPhone SE)
+- `Custom` - Use ViewportWidth and ViewportHeight values
+
+**Option 2: Custom Dimensions**
+
+Set custom dimensions in `appsettings.json`:
+
+```json
+{
+  "Ui": {
+    "Profile": "Custom",
+    "ViewportWidth": 1440,
+    "ViewportHeight": 900
+  }
+}
+```
+
+**Option 3: Environment Variable Overrides**
+
+Override viewport settings at runtime using environment variables:
+
+**Windows (PowerShell):**
+```powershell
+# Use a predefined profile
+$env:UI__Profile = "TabletLandscape"
+dotnet test
+
+# Use custom dimensions
+$env:UI__Profile = "Custom"
+$env:UI__ViewportWidth = "1440"
+$env:UI__ViewportHeight = "900"
+dotnet test
+```
+
+**macOS/Linux:**
+```bash
+# Use a predefined profile
+export UI__Profile="MobileLarge"
+dotnet test
+
+# Use custom dimensions
+export UI__Profile="Custom"
+export UI__ViewportWidth="1440"
+export UI__ViewportHeight="900"
+dotnet test
+```
+
+**CI/CD Example:**
+```yaml
+- name: Run tests on mobile resolution
+  run: dotnet test
+  env:
+    UI__Profile: MobileLarge
+
+- name: Run tests on desktop resolution
+  run: dotnet test
+  env:
+    UI__Profile: DesktopFullHD
+```
+
+This allows you to:
+- Test the same scenarios across multiple device sizes
+- Run parallel test jobs in CI/CD with different resolutions
+- Quickly switch between devices without changing configuration files
 
 #### API Settings
 
@@ -254,11 +403,13 @@ export TEST_ENVIRONMENT=testing
     "BaseUrl": "https://reqres.in/api/",
     "Timeout": 30000,
     "Headers": {
-      "x-api-key": "reqres-free-v1"
+      "x-api-key": "your-api-key-here"
     }
   }
 }
 ```
+
+⚠️ **Security Note:** Never commit actual API keys to `appsettings.json`. See the [Security - Managing API Keys](#security-managing-api-keys) section below.
 
 #### Reporting Settings
 
@@ -272,15 +423,105 @@ export TEST_ENVIRONMENT=testing
 }
 ```
 
+## 🔐 Security - Managing API Keys
+
+**Important:** Never commit sensitive data like API keys directly to your repository!
+
+### 🏠 Local Development - User Secrets (Cross-Platform)
+
+**User Secrets** work on **all platforms** (Windows, macOS, Linux) and store sensitive data outside your project directory.
+
+#### Quick Setup:
+
+```bash
+# From repository root, navigate to the project directory
+cd AutomationTask
+
+# Set your API key securely (get your key from https://reqres.in/signup)
+dotnet user-secrets set "API:Headers:x-api-key" "your-api-key-from-reqres"
+
+# Verify it was set
+dotnet user-secrets list
+
+# Navigate back to repository root
+cd ..
+
+# Run tests to verify
+dotnet test --filter "Category=API"
+```
+
+**Where secrets are stored:**
+- Windows: `%APPDATA%\Microsoft\UserSecrets\automationtask-secrets-2024\`
+- macOS/Linux: `~/.microsoft/usersecrets/automationtask-secrets-2024/`
+
+### 🔧 CI/CD - Environment Variables
+
+For GitHub Actions (already configured in `.github/workflows/dotnet.yml`):
+
+1. Go to: **Repository → Settings → Secrets and variables → Actions**
+2. Click **"New repository secret"**
+3. Name: `API_KEY`
+4. Value: Your API key from [https://reqres.in/signup](https://reqres.in/signup)
+
+The workflow uses: `API__Headers__x-api-key: ${{ secrets.API_KEY }}`
+
+### Configuration Priority
+
+Settings are loaded in this order (later overrides earlier):
+
+1. `appsettings.json` → Base configuration (placeholders)
+2. `appsettings.{Environment}.json` → Environment-specific
+3. **User Secrets** → Local development secrets
+4. **Environment Variables** → CI/CD secrets (highest priority)
+
 ## 🧪 Running Tests
 
-### Run All Tests
+### Using PowerShell Script (Recommended)
+
+The framework includes a convenient PowerShell script for running tests with environment configuration. The script works from both **repository root** and **project directory**.
+
+**From repository root:**
+
+```powershell
+# Run all tests with default settings
+.\AutomationTask\run-tests.ps1
+
+# Run tests in specific environment
+.\AutomationTask\run-tests.ps1 -Environment "staging"
+
+# Run tests with category filter
+.\AutomationTask\run-tests.ps1 -Filter "Category=Smoke"
+
+# Combine environment and filter
+.\AutomationTask\run-tests.ps1 -Environment "testing" -Filter "Category=API"
+
+# Run specific browser tests
+.\AutomationTask\run-tests.ps1 -Browser "firefox" -Filter "Category=UI"
+```
+
+**From AutomationTask directory:**
+
+```powershell
+cd AutomationTask
+.\run-tests.ps1 -Filter "Category=API"
+```
+
+**Script Parameters:**
+- `-Environment`: Target environment (dev, testing, staging, production) - Default: "dev"
+- `-Filter`: NUnit test filter expression
+- `-Browser`: Browser to use (chrome, chromium, firefox, webkit) - Default: "chrome"
+
+### Using .NET CLI
+
+All commands should be run from the **repository root**.
+
+#### Run All Tests
 
 ```bash
 dotnet test
 ```
 
-### Run Tests by Category
+#### Run Tests by Category
 
 The framework uses NUnit categories for test organization:
 
@@ -314,13 +555,7 @@ dotnet test --filter "Category=Sorting"
 dotnet test --filter "Category=Users"
 ```
 
-**By Test Type:**
-```bash
-# Run negative tests
-dotnet test --filter "Category=Negative"
-```
-
-### Run Specific Test
+#### Run Specific Test
 
 ```bash
 # By test name
@@ -330,7 +565,7 @@ dotnet test --filter "FullyQualifiedName~SuccessfulCheckoutWithProducts"
 dotnet test --filter "FullyQualifiedName~CheckoutTests"
 ```
 
-### Combined Filters
+#### Combined Filters
 
 ```bash
 # High priority UI tests
@@ -340,31 +575,26 @@ dotnet test --filter "Category=UI&Category=HighPriority"
 dotnet test --filter "Category=Smoke"
 ```
 
-### Run Tests with Detailed Output
+#### Run Tests with Detailed Output
 
 ```bash
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-### Examples
+### Common Test Scenarios
 
-**Example 1: Run all checkout tests**
-```bash
-dotnet test --filter "Category=Checkout"
-```
-
-**Example 2: Run smoke tests in headless mode**
-1. Update `appsettings.json` → set `"Headless": true`
+**Run smoke tests in headless mode:**
+1. Update `AutomationTask/appsettings.json` → set `"Headless": true`
 2. Run: `dotnet test --filter "Category=Smoke"`
 
-**Example 3: Run specific test method**
+**Run UI tests in Firefox:**
+1. Update `AutomationTask/appsettings.json` → set `"Browser": "firefox"`
+2. Run: `dotnet test --filter "Category=UI"`
+
+**Run specific test method:**
 ```bash
 dotnet test --filter "FullyQualifiedName~ProductSorting_ByPrice_HighToLow"
 ```
-
-**Example 4: Run in different browser**
-1. Update `appsettings.json` → set `"Browser": "firefox"`
-2. Run: `dotnet test --filter "Category=UI"`
 
 ## 📊 Test Reports
 
