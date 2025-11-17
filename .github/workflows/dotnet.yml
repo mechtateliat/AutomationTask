@@ -38,21 +38,35 @@ jobs:
         API__Headers__x-api-key: ${{ secrets.API_KEY }}
       run: dotnet test --no-build --configuration Release --verbosity normal
       continue-on-error: true
+    
+    - name: List generated test artifacts (debug)
+      if: always()
+      run: |
+        echo "=== Searching for test artifacts ==="
+        find . -name "TestReports" -type d 2>/dev/null || true
+        find . -name "*.html" -path "*/TestReports/*" 2>/dev/null || true
+        echo "=== Directory structure ==="
+        ls -la AutomationTask/ || true
+        ls -la AutomationTask/TestReports/ || true
         
     - name: Upload test reports (ExtentReports HTML)
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-reports
-        path: AutomationTask/TestReports/*.html
-        if-no-files-found: ignore
+        path: |
+          **/TestReports/*.html
+          AutomationTask/TestReports/*.html
+        if-no-files-found: warn
         
     - name: Upload screenshots
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: screenshots
-        path: AutomationTask/TestReports/screenshots/**/*
+        path: |
+          **/TestReports/screenshots/**/*
+          AutomationTask/TestReports/screenshots/**/*
         if-no-files-found: ignore
         
     - name: Upload videos
@@ -60,7 +74,9 @@ jobs:
       if: always()
       with:
         name: videos
-        path: AutomationTask/TestReports/videos/**/*
+        path: |
+          **/TestReports/videos/**/*
+          AutomationTask/TestReports/videos/**/*
         if-no-files-found: ignore
         
     - name: Upload Playwright traces
@@ -68,5 +84,7 @@ jobs:
       if: failure()
       with:
         name: playwright-traces
-        path: AutomationTask/TestReports/traces/**/*
+        path: |
+          **/TestReports/traces/**/*
+          AutomationTask/TestReports/traces/**/*
         if-no-files-found: ignore
