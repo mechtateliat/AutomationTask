@@ -62,7 +62,7 @@ jobs:
     - name: Create test results summary
       if: always()
       run: |
-        echo "## ?? Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         if [ -f "AutomationTask/TestResults/test-results.trx" ]; then
@@ -71,17 +71,17 @@ jobs:
           PASSED=$(grep -oP 'passed="\K[0-9]+' AutomationTask/TestResults/test-results.trx || echo "0")
           FAILED=$(grep -oP 'failed="\K[0-9]+' AutomationTask/TestResults/test-results.trx || echo "0")
           
-          echo "- ? **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- ? **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
-          echo "- ?? **Total:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- :white_check_mark: **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- :x: **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "- :memo: **Total:** $TOTAL" >> $GITHUB_STEP_SUMMARY
         else
           echo "Test results file not found" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ?? Full Test Report" >> $GITHUB_STEP_SUMMARY
+        echo "### Full Test Report" >> $GITHUB_STEP_SUMMARY
         echo "The detailed HTML test report will be available at:" >> $GITHUB_STEP_SUMMARY
-        echo "?? https://mechtateliat.github.io/AutomationTask/" >> $GITHUB_STEP_SUMMARY
+        echo ":link: https://mechtateliat.github.io/AutomationTask/" >> $GITHUB_STEP_SUMMARY
         
     - name: Upload test reports (ExtentReports HTML)
       uses: actions/upload-artifact@v4
