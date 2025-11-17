@@ -1,0 +1,70 @@
+name: .NET Build and Test
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Install Playwright browsers
+      run: pwsh AutomationTask/bin/Release/net8.0/playwright.ps1 install --with-deps
+      
+    - name: Run tests
+      env:
+        # API Configuration - Sensitive data should be stored in GitHub Secrets
+        # Go to: Repository Settings - Secrets and variables - Actions - New repository secret
+        # Add a secret named 'API_KEY' with your actual API key value
+        API__Headers__x-api-key: ${{ secrets.API_KEY }}
+      run: dotnet test --no-build --configuration Release --verbosity normal
+      continue-on-error: true
+        
+    - name: Upload test reports (ExtentReports HTML)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports
+        path: AutomationTask/TestReports/*.html
+        if-no-files-found: ignore
+        
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: screenshots
+        path: AutomationTask/TestReports/screenshots/**/*
+        if-no-files-found: ignore
+        
+    - name: Upload videos
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: videos
+        path: AutomationTask/TestReports/videos/**/*
+        if-no-files-found: ignore
+        
+    - name: Upload Playwright traces
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-traces
+        path: AutomationTask/TestReports/traces/**/*
+        if-no-files-found: ignore
